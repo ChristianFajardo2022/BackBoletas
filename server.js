@@ -1,48 +1,62 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+require('dotenv').config(); // Cargar las variables de entorno
 const admin = require('firebase-admin');
-require('dotenv').config(); // Importar dotenv para leer las variables de entorno
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
-// Inicializar Firebase Admin SDK
-const serviceAccount = require(process.env.FIREBASE_CREDENTIALS);
+// Leer las credenciales desde el archivo especificado en el entorno
+const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
+if (!credentialsPath) {
+  throw new Error('FIREBASE_CREDENTIALS_PATH no está definido en .env');
+}
 
+// Asegúrate de que el archivo de credenciales existe
+if (!fs.existsSync(credentialsPath)) {
+  throw new Error(`El archivo de credenciales no se encontró en la ruta: ${credentialsPath}`);
+}
+
+// Inicializar Firebase
+const serviceAccount = require(path.resolve(credentialsPath));
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
 });
 
 const db = admin.firestore();
+
+// Configuración del servidor Express
 const app = express();
+app.use(express.json());
 
-app.use(bodyParser.json());
-app.use(cors());
-
-const PORT = process.env.PORT || 5000;
-
-app.post('/submit', async (req, res) => {
-  const { nombre, documento, ciudad, celular, correo, edad } = req.body;
-
-  if (!nombre) {
-    return res.status(400).send('El campo "nombre" es obligatorio.');
-  }
-
+// Ruta para registrar datos en Firestore
+app.post('/registro', async (req, res) => {
   try {
-    // Crear o actualizar un documento en la colección 'boletas'
-    await db.collection('boletas').doc(nombre).set({
+    const { nombre, documento, ciudad, celular, correo, edad } = req.body;
+
+    if (!nombre) {
+      return res.status(400).send({ error: 'El campo nombre es obligatorio' });
+    }
+
+    const userDoc = db.collection('boletas').doc(nombre);
+    await userDoc.set({
       documento,
       ciudad,
       celular,
       correo,
       edad,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.status(200).send('Datos registrados en Firestore.');
+    res.status(201).send({ message: 'Registro exitoso' });
   } catch (error) {
-    console.error('Error al guardar en Firestore:', error);
-    res.status(500).send('Error al guardar en Firestore.');
+    console.error('Error al registrar en Firestore:', error);
+    res.status(500).send({ error: 'Error al registrar en Firestore' });
   }
 });
 
-app.listen(PORT, () =>
-  console.log(`Servidor corriendo en http://localhost:${PORT}`)
-);
+// Iniciar el servidor
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
