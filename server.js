@@ -1,68 +1,72 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+require('dotenv').config(); // Cargar las variables de entorno
 const admin = require('firebase-admin');
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const cors = require('cors'); // Importar el middleware de CORS
 
-const app = express();
+// Leer las credenciales desde el archivo especificado en el entorno
+const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
+if (!credentialsPath) {
+  throw new Error('FIREBASE_CREDENTIALS_PATH no está definido en .env');
+}
 
-// Configurar CORS
-app.use(cors());
+// Asegúrate de que el archivo de credenciales existe
+if (!fs.existsSync(credentialsPath)) {
+  throw new Error(`El archivo de credenciales no se encontró en la ruta: ${credentialsPath}`);
+}
 
-// Parsear JSON
-app.use(bodyParser.json());
+// Inicializar Firebase
+const serviceAccount = require(path.resolve(credentialsPath));
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+});
 
-// Inicializar Firebase Admin
-admin.initializeApp();
 const db = admin.firestore();
 
-// Endpoint para registrar los datos
-app.post('/registro', async (req, res) => {
-    const { nombre, documentoTipo, documento, ciudad, celular, correo, edad } = req.body;
-  
-    // Validación de los campos
-    if (!nombre || !documentoTipo || !documento || !ciudad || !celular || !correo || !edad) {
-      return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
-    }
-  
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(correo)) {
-      return res.status(400).json({ error: 'Por favor, introduce un correo válido.' });
-    }
-  
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(celular)) {
-      return res.status(400).json({ error: 'Por favor, introduce un número de celular válido.' });
-    }
-  
-    if (isNaN(edad) || edad <= 0) {
-      return res.status(400).json({ error: 'Por favor, introduce una edad válida.' });
-    }
-  
-    try {
-      // Intentar agregar datos a Firestore
-      const newDocRef = await db.collection('usuarios').add({
-        nombre,
-        documentoTipo,
-        documento,
-        ciudad,
-        celular,
-        correo,
-        edad,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-  
-      // Confirmación de éxito
-      res.status(200).json({ message: 'Datos registrados con éxito.', documentId: newDocRef.id });
-    } catch (error) {
-      // Registrar error detallado
-      console.error('Error al agregar datos a Firestore:', error.message);
-      console.error('Detalles del error:', error.stack);
-      res.status(500).json({ error: 'Error al guardar los datos. Intenta nuevamente.' });
-    }
-  });
+// Configuración del servidor Express
+const app = express();
 
-// Puerto en el que el servidor escucha
+// Usar CORS para permitir solicitudes desde cualquier origen (para desarrollo)
+app.use(cors({
+  origin: ['http://localhost:5173'], // Aquí agregas la URL de tu frontend local
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
+
+app.use(express.json());
+
+// Ruta para registrar datos en Firestore
+app.post('/registro', async (req, res) => {
+  try {
+    const { nombre, documentoTipo, documento, ciudad, celular, correo, edad } = req.body;
+
+    if (!nombre) {
+      return res.status(400).send({ error: 'El campo nombre es obligatorio' });
+    }
+
+    const userDoc = db.collection('boletas').doc(nombre);
+    await userDoc.set({
+        documentoTipo,
+      documento,
+      ciudad,
+      celular,
+      correo,
+      edad,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    res.status(201).send({ message: 'Registro exitoso' });
+  } catch (error) {
+    console.error('Error al registrar en Firestore:', error);
+    res.status(500).send({ error: 'Error al registrar en Firestore' });
+  }
+});
+
+// Iniciar el servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Servidor en ejecución en puerto ${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
