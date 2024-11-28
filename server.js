@@ -4,6 +4,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors'); // Importar el middleware de CORS
+const QRCode = require('qrcode'); // Importar la librería para generar el código QR
 
 // Leer las credenciales desde el archivo especificado en el entorno
 const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
@@ -47,15 +48,22 @@ app.post('/registro', async (req, res) => {
       return res.status(400).send({ error: 'El campo nombre es obligatorio' });
     }
 
+    // Generar el código QR único
+    const uniqueCode = `QR-${Math.random().toString(36).substr(2, 9)}`; // Código único basado en random
+    const qrCodeDataUrl = await QRCode.toDataURL(uniqueCode); // Genera la imagen del QR en formato DataURL
+
+    // Crear el documento en Firestore
     const userDoc = db.collection('boletas').doc(nombre);
     await userDoc.set({
-        documentoTipo,
+      documentoTipo,
       documento,
       ciudad,
       celular,
       correo,
       edad,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      qrCode: qrCodeDataUrl, // Guardamos el código QR generado
+      usado: false, // Inicializamos el campo usado como false
     });
 
     res.status(201).send({ message: 'Registro exitoso' });
