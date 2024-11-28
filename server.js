@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors'); // Importar el middleware de CORS
 
 // Leer las credenciales desde el archivo especificado en el entorno
 const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
@@ -27,6 +28,14 @@ const db = admin.firestore();
 
 // Configuración del servidor Express
 const app = express();
+
+// Usar CORS para permitir solicitudes desde cualquier origen (para desarrollo)
+app.use(cors({
+  origin: ['http://localhost:5173'], // Aquí agregas la URL de tu frontend local
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
+
 app.use(express.json());
 
 // Ruta para registrar datos en Firestore
