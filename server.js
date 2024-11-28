@@ -54,6 +54,7 @@ app.post('/registro', async (req, res) => {
 
     // Crear el documento en Firestore con ID automático
     const userDoc = await db.collection('boletas').add({
+        nombre,
       documentoTipo,
       documento,
       ciudad,
