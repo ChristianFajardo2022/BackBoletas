@@ -1,8 +1,13 @@
 const express = require('express');
+const cors = require('cors'); // Importa el paquete CORS
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
 
 const app = express();
+
+// Configuración de CORS para permitir solicitudes desde cualquier origen
+app.use(cors()); // Si deseas restringir los orígenes, pasa un objeto de opciones
+
 app.use(bodyParser.json()); // Para parsear los datos JSON
 
 admin.initializeApp(); // Inicialización de Firebase Admin SDK
