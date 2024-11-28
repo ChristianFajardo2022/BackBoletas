@@ -32,7 +32,7 @@ const app = express();
 
 // Usar CORS para permitir solicitudes desde cualquier origen (para desarrollo)
 app.use(cors({
-  origin: ['http://localhost:5173'], // Aquí agregas la URL de tu frontend local
+  origin: ['https://elgranacto.com/'], // Aquí agregas la URL de tu frontend local
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
