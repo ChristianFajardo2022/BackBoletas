@@ -1,23 +1,25 @@
 const express = require('express');
-const cors = require('cors'); // Importa el paquete CORS
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
 
 const app = express();
 
-// Configuración de CORS para permitir solicitudes desde cualquier origen
-app.use(cors()); // Si deseas restringir los orígenes, pasa un objeto de opciones
+// Configurar CORS
+app.use(cors());
 
-app.use(bodyParser.json()); // Para parsear los datos JSON
+// Parsear JSON
+app.use(bodyParser.json());
 
-admin.initializeApp(); // Inicialización de Firebase Admin SDK
+// Inicializar Firebase Admin
+admin.initializeApp();
 const db = admin.firestore();
 
 // Endpoint para registrar los datos
 app.post('/registro', async (req, res) => {
   const { nombre, documentoTipo, documento, ciudad, celular, correo, edad } = req.body;
 
-  // Validación de los datos
+  // Validación de los campos
   if (!nombre || !documentoTipo || !documento || !ciudad || !celular || !correo || !edad) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
   }
@@ -38,7 +40,7 @@ app.post('/registro', async (req, res) => {
 
   try {
     // Guardar datos en Firestore
-    await db.collection('usuarios').add({
+    const newDocRef = await db.collection('usuarios').add({
       nombre,
       documentoTipo,
       documento,
@@ -49,9 +51,10 @@ app.post('/registro', async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.status(200).json({ message: 'Datos registrados con éxito.' });
+    // Confirmar éxito
+    res.status(200).json({ message: 'Datos registrados con éxito.', documentId: newDocRef.id });
   } catch (error) {
-    console.error(error);
+    console.error('Error al agregar datos a Firestore:', error);
     res.status(500).json({ error: 'Error al guardar los datos.' });
   }
 });
