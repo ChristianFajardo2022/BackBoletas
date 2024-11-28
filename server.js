@@ -32,7 +32,7 @@ const app = express();
 
 // Usar CORS para permitir solicitudes desde cualquier origen (para desarrollo)
 app.use(cors({
-  origin: ['http://localhost:5173'], // Aquí agregas la URL de tu frontend local
+  origin: ['https://elgranacto.com/'], // Aquí agregas la URL de tu frontend local
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
@@ -52,9 +52,9 @@ app.post('/registro', async (req, res) => {
     const uniqueCode = `QR-${Math.random().toString(36).substr(2, 9)}`; // Código único basado en random
     const qrCodeDataUrl = await QRCode.toDataURL(uniqueCode); // Genera la imagen del QR en formato DataURL
 
-    // Crear el documento en Firestore
-    const userDoc = db.collection('boletas').doc(nombre);
-    await userDoc.set({
+    // Crear el documento en Firestore con un ID único generado automáticamente
+    const newUserRef = await db.collection('boletas').add({
+      nombre,
       documentoTipo,
       documento,
       ciudad,
@@ -66,7 +66,7 @@ app.post('/registro', async (req, res) => {
       usado: false, // Inicializamos el campo usado como false
     });
 
-    res.status(201).send({ message: 'Registro exitoso' });
+    res.status(201).send({ message: 'Registro exitoso', userId: newUserRef.id });
   } catch (error) {
     console.error('Error al registrar en Firestore:', error);
     res.status(500).send({ error: 'Error al registrar en Firestore' });
