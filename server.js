@@ -111,10 +111,19 @@ app.get('/boletas', async (req, res) => {
 app.get('/exportar-excel', async (req, res) => {
   try {
     const querySnapshot = await db.collection('boletas').get();
-    const boletas = querySnapshot.docs.map(doc => ({
-      id: doc.id, // Incluimos el ID del documento
-      ...doc.data(), // Incluimos todos los datos del documento
-    }));
+    const boletas = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+
+      // Convertir el campo timestamp a un formato legible
+      if (data.timestamp) {
+        data.timestamp = data.timestamp.toDate().toISOString(); // Convierte a formato ISO
+      }
+
+      return {
+        id: doc.id, // Incluimos el ID del documento
+        ...data, // Incluimos todos los datos del documento
+      };
+    });
 
     // Creamos una hoja de trabajo de Excel con los datos
     const worksheet = XLSX.utils.json_to_sheet(boletas);
@@ -142,6 +151,7 @@ app.get('/exportar-excel', async (req, res) => {
     res.status(500).send({ error: 'Error al exportar a Excel' });
   }
 });
+
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
