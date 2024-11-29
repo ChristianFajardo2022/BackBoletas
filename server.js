@@ -54,7 +54,7 @@ app.post('/registro', async (req, res) => {
 
     // Crear el documento en Firestore con ID automático
     const userDoc = await db.collection('boletas').add({
-        nombre,
+      nombre,
       documentoTipo,
       documento,
       ciudad,
@@ -70,6 +70,22 @@ app.post('/registro', async (req, res) => {
   } catch (error) {
     console.error('Error al registrar en Firestore:', error);
     res.status(500).send({ error: 'Error al registrar en Firestore' });
+  }
+});
+
+// Nuevo endpoint para obtener datos desde Firestore
+app.get('/boletas', async (req, res) => {
+  try {
+    const querySnapshot = await db.collection('boletas').get();
+    const boletas = querySnapshot.docs.map(doc => ({
+      id: doc.id, // Incluimos el ID del documento
+      ...doc.data() // Incluimos todos los datos del documento
+    }));
+
+    res.status(200).send(boletas);
+  } catch (error) {
+    console.error('Error al obtener datos de Firestore:', error);
+    res.status(500).send({ error: 'Error al obtener datos de Firestore' });
   }
 });
 
