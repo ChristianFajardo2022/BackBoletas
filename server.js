@@ -73,6 +73,22 @@ app.post('/registro', async (req, res) => {
   }
 });
 
+// Nuevo endpoint para obtener una boleta específica
+app.get('/boletas/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const doc = await db.collection('boletas').doc(id).get();
+    if (!doc.exists) {
+      return res.status(404).send({ error: 'Boleta no encontrada' });
+    }
+    res.status(200).send({ id: doc.id, ...doc.data() });
+  } catch (error) {
+    console.error('Error al obtener la boleta:', error);
+    res.status(500).send({ error: 'Error al obtener la boleta' });
+  }
+});
+
+
 // Nuevo endpoint para obtener datos desde Firestore
 app.get('/boletas', async (req, res) => {
   try {
