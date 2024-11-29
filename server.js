@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors'); // Importar el middleware de CORS
 const QRCode = require('qrcode'); // Importar la librería para generar el código QR
+const XLSX = require('xlsx');
 
 // Leer las credenciales desde el archivo especificado en el entorno
 const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
@@ -102,6 +103,43 @@ app.get('/boletas', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener datos de Firestore:', error);
     res.status(500).send({ error: 'Error al obtener datos de Firestore' });
+  }
+});
+
+
+// Nuevo endpoint para exportar los datos a un archivo Excel
+app.get('/exportar-excel', async (req, res) => {
+  try {
+    const querySnapshot = await db.collection('boletas').get();
+    const boletas = querySnapshot.docs.map(doc => ({
+      id: doc.id, // Incluimos el ID del documento
+      ...doc.data(), // Incluimos todos los datos del documento
+    }));
+
+    // Creamos una hoja de trabajo de Excel con los datos
+    const worksheet = XLSX.utils.json_to_sheet(boletas);
+
+    // Creamos un libro de trabajo con la hoja creada
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Boletas');
+
+    // Guardamos el archivo Excel en memoria
+    const filePath = path.join(__dirname, 'boletas.xlsx');
+    XLSX.writeFile(workbook, filePath);
+
+    // Enviar el archivo al cliente
+    res.download(filePath, 'boletas.xlsx', (err) => {
+      if (err) {
+        console.error('Error al descargar el archivo:', err);
+        res.status(500).send({ error: 'Error al generar el archivo Excel' });
+      } else {
+        // Eliminar el archivo temporal después de la descarga
+        fs.unlinkSync(filePath);
+      }
+    });
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    res.status(500).send({ error: 'Error al exportar a Excel' });
   }
 });
 
