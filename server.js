@@ -152,6 +152,40 @@ app.get('/exportar-excel', async (req, res) => {
   }
 });
 
+// Endpoint para validar el código QR
+app.post('/validar-qr', async (req, res) => {
+  try {
+    const { qrCode } = req.body;
+
+    if (!qrCode) {
+      return res.status(400).send({ error: 'El código QR es obligatorio' });
+    }
+
+    // Buscar el documento que coincida con el QR proporcionado
+    const querySnapshot = await db.collection('boletas').where('qrCode', '==', qrCode).get();
+
+    if (querySnapshot.empty) {
+      return res.status(404).send({ message: 'Código QR no encontrado' });
+    }
+
+    const doc = querySnapshot.docs[0]; // Suponemos que el código QR es único
+    const boleta = doc.data();
+
+    // Verificar si el QR ya fue usado
+    if (boleta.usado) {
+      return res.status(400).send({ message: 'Este código ya fue usado' });
+    }
+
+    // Actualizar el estado del QR a usado
+    await db.collection('boletas').doc(doc.id).update({ usado: true });
+
+    res.status(200).send({ message: 'Código validado correctamente', data: boleta });
+  } catch (error) {
+    console.error('Error al validar el código QR:', error);
+    res.status(500).send({ error: 'Error al validar el código QR' });
+  }
+});
+
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
