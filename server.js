@@ -159,36 +159,36 @@ app.get('/validar-qr', async (req, res) => {
   }
 
   try {
-    // Buscar en la colección `boletas2` por el código QR
+    // Buscar en la colección por `uniqueCodePrincipal`
     const snapshot = await db.collection('boletas2')
       .where('uniqueCodePrincipal', '==', uniqueCode)
       .get();
 
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
-      if (doc.data().usadoPrincipal) {
-        return res.status(400).json({ error: 'El código QR ya fue utilizado' });
-      }
-
-      // Actualizar el estado de uso en Firestore
-      await doc.ref.update({ usadoPrincipal: true });
-      return res.json({ message: 'QR válido. Acceso permitido', nombre: doc.data().nombre });
+      return res.json({ 
+        message: 'QR válido', 
+        type: 'principal', 
+        nombre: doc.data().nombre, 
+        id: doc.id,
+        usado: doc.data().usadoPrincipal 
+      });
     }
 
-    // Verificar acompañante
+    // Buscar por `uniqueCodeAcompanante`
     const snapshotAcompanante = await db.collection('boletas2')
       .where('uniqueCodeAcompanante', '==', uniqueCode)
       .get();
 
     if (!snapshotAcompanante.empty) {
       const doc = snapshotAcompanante.docs[0];
-      if (doc.data().usadoAcompanante) {
-        return res.status(400).json({ error: 'El código QR ya fue utilizado' });
-      }
-
-      // Actualizar el estado de uso en Firestore
-      await doc.ref.update({ usadoAcompanante: true });
-      return res.json({ message: 'QR válido para acompañante. Acceso permitido', nombre: doc.data().nombre });
+      return res.json({ 
+        message: 'QR válido', 
+        type: 'acompanante', 
+        nombre: doc.data().nombre, 
+        id: doc.id,
+        usado: doc.data().usadoAcompanante 
+      });
     }
 
     return res.status(404).json({ error: 'Código QR no encontrado' });
@@ -198,6 +198,26 @@ app.get('/validar-qr', async (req, res) => {
   }
 });
 
+// Endpoint para cambiar el estado de uso
+app.post('/actualizar-qr', async (req, res) => {
+  const { id, type } = req.body;
+
+  if (!id || !type) {
+    return res.status(400).json({ error: 'Faltan datos necesarios' });
+  }
+
+  try {
+    const docRef = db.collection('boletas2').doc(id);
+
+    const fieldToUpdate = type === 'principal' ? 'usadoPrincipal' : 'usadoAcompanante';
+
+    await docRef.update({ [fieldToUpdate]: true });
+    return res.json({ message: 'Estado actualizado correctamente' });
+  } catch (error) {
+    console.error('Error actualizando el estado:', error);
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
 
 
 // Iniciar el servidor
