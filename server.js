@@ -44,10 +44,10 @@ app.use(express.json());
 // Configuración de Multer para almacenamiento temporal
 const upload = multer({ dest: "uploads/" });
 
-// Especifica la ruta completa de ffmpeg y ffprobe
+/* // Especifica la ruta completa de ffmpeg y ffprobe
 ffmpeg.setFfmpegPath('C:/ffmpeg/bin/ffmpeg.exe');
 ffmpeg.setFfprobePath('C:/ffmpeg/bin/ffprobe.exe');
-
+ */
 // Ruta para combinar audios
 app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
   // Verifica si los archivos están presentes
