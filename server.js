@@ -7,6 +7,16 @@ const cors = require('cors'); // Importar el middleware de CORS
 const QRCode = require('qrcode'); // Importar la librería para generar el código QR
 const XLSX = require('xlsx');
 
+const express = require("express");
+const multer = require("multer");
+const ffmpeg = require("fluent-ffmpeg");
+const morgan = require("morgan");
+const path = require("path");
+const fs = require("fs/promises"); // Módulo para trabajar con promesas en FS.
+const fsStream = require("fs"); // Para manejar la transmisión de archivos.
+const cors = require("cors");
+
+
 // Leer las credenciales desde el archivo especificado en el entorno
 const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
 if (!credentialsPath) {
@@ -40,14 +50,8 @@ app.use(cors({
 
 app.use(express.json());
 
-
-// Configuración de Multer para almacenamiento temporal
 const upload = multer({ dest: "uploads/" });
 
-/* // Especifica la ruta completa de ffmpeg y ffprobe
-ffmpeg.setFfmpegPath('C:/ffmpeg/bin/ffmpeg.exe');
-ffmpeg.setFfprobePath('C:/ffmpeg/bin/ffprobe.exe');
- */
 // Ruta para combinar audios
 app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
   // Verifica si los archivos están presentes
@@ -57,7 +61,7 @@ app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
 
   // Resuelve las rutas completas de los archivos recibidos
   const [audio1, audio2] = req.files.map((file) => path.resolve(file.path));
-  const outputPath = path.resolve("uploads", combined-${Date.now()}.mp3);
+  const outputPath = path.resolve("uploads", `combined-${Date.now()}.mp3`);
 
   try {
     // Combina los audios usando la función de FFmpeg
@@ -100,6 +104,7 @@ async function combineAudios(audio1Path, audio2Path, outputPath) {
       .mergeToFile(outputPath);
   });
 }
+
 
 // Ruta para registrar datos en Firestore
 /* app.post('/registro', async (req, res) => {
