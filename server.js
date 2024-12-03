@@ -78,7 +78,7 @@ app.post('/registro', async (req, res) => {
 app.get('/boletas/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const doc = await db.collection('boletas').doc(id).get();
+    const doc = await db.collection('boletas2').doc(id).get();
     if (!doc.exists) {
       return res.status(404).send({ error: 'Boleta no encontrada' });
     }
@@ -93,7 +93,7 @@ app.get('/boletas/:id', async (req, res) => {
 // Nuevo endpoint para obtener datos desde Firestore
 app.get('/boletas', async (req, res) => {
   try {
-    const querySnapshot = await db.collection('boletas').get();
+    const querySnapshot = await db.collection('boletas2').get();
     const boletas = querySnapshot.docs.map(doc => ({
       id: doc.id, // Incluimos el ID del documento
       ...doc.data() // Incluimos todos los datos del documento
