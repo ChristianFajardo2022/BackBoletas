@@ -159,12 +159,16 @@ app.get('/validar-qr', async (req, res) => {
       return res.status(400).json({ message: 'El código QR es obligatorio.' });
     }
 
-    // Buscar en Firestore
+    console.log('Buscando QR:', uniqueCode); // Log para depuración
+
+    // Buscar en Firestore el QR principal
     const snapshot = await db.collection('boletas2')
       .where('qrCodePrincipal', '==', uniqueCode)
       .get();
 
     if (snapshot.empty) {
+      console.log('No se encontró QR principal, buscando QR acompañante...'); // Log para depuración
+
       // Si no es el código principal, buscar como acompañante
       const acompSnapshot = await db.collection('boletas2')
         .where('qrCodeAcompanante', '==', uniqueCode)
