@@ -173,10 +173,15 @@ app.get('/validar-qr', async (req, res) => {
 
   console.log('Código QR recibido:', uniqueCode);  // Imprime el código QR recibido para depuración
 
+  // Eliminar el prefijo 'QR-' si está presente
+  const cleanedUniqueCode = uniqueCode.replace(/^QR-/, '').trim();
+
+  console.log('Código QR limpio:', cleanedUniqueCode);  // Imprime el código limpio sin el prefijo 'QR-'
+
   try {
     // Buscar en la colección 'boletas2' por uniqueCodePrincipal
     const snapshot = await db.collection('boletas2')
-      .where('uniqueCodePrincipal', '==', uniqueCode.trim())  // Buscamos el uniqueCodePrincipal
+      .where('uniqueCodePrincipal', '==', cleanedUniqueCode)  // Buscamos el uniqueCodePrincipal sin el prefijo 'QR-'
       .get();
 
     if (!snapshot.empty) {
@@ -193,7 +198,7 @@ app.get('/validar-qr', async (req, res) => {
 
     // Si no se encuentra por uniqueCodePrincipal, buscamos por uniqueCodeAcompanante
     const snapshotAcompanante = await db.collection('boletas2')
-      .where('uniqueCodeAcompanante', '==', uniqueCode.trim())  // Buscamos el uniqueCodeAcompanante
+      .where('uniqueCodeAcompanante', '==', cleanedUniqueCode)  // Buscamos el uniqueCodeAcompanante sin el prefijo 'QR-'
       .get();
 
     if (!snapshotAcompanante.empty) {
@@ -215,7 +220,6 @@ app.get('/validar-qr', async (req, res) => {
     return res.status(500).json({ error: 'Error del servidor' });
   }
 });
-
 
 // Endpoint para actualizar el estado del QR
 app.post('/actualizar-qr', async (req, res) => {
