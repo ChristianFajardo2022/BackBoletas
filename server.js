@@ -225,6 +225,54 @@ app.get('/exportar-excel', async (req, res) => {
   }
 });
 
+// Endpoint para exportar los datos de Firestore a un archivo Excel
+app.get('/exportar-excel2', async (req, res) => {
+  try {
+    // Obtener los documentos de la colección 'boletas2'
+    const querySnapshot = await db.collection('boletas2').get();
+    const boletas = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id, // Incluimos el ID del documento
+        nombre: data.nombre,
+        correo: data.correo,
+        telefono: data.telefono,
+        uniqueCodePrincipal: data.uniqueCodePrincipal,
+        qrCodePrincipal: data.qrCodePrincipal,
+        usadoPrincipal: data.usadoPrincipal,
+        createdAt: data.createdAt.toDate().toISOString(), // Convertimos la fecha a string legible
+      };
+    });
+
+    // Creamos una hoja de trabajo de Excel con los datos
+    const worksheet = XLSX.utils.json_to_sheet(boletas);
+
+    // Creamos un libro de trabajo con la hoja creada
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Boletas');
+
+    // Guardamos el archivo Excel en memoria
+    const filePath = path.join(__dirname, 'boletas.xlsx');
+    XLSX.writeFile(workbook, filePath);
+
+    // Enviar el archivo al cliente
+    res.download(filePath, 'boletas.xlsx', (err) => {
+      if (err) {
+        console.error('Error al descargar el archivo:', err);
+        res.status(500).send({ error: 'Error al generar el archivo Excel' });
+      } else {
+        // Eliminar el archivo temporal después de la descarga
+        fs.unlinkSync(filePath);
+      }
+    });
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    res.status(500).send({ error: 'Error al exportar a Excel' });
+  }
+});
+
+
+
 // Endpoint para validar el QR ----------------------------------------------------------------------------------------------------
 // Endpoint para validar el QR
 app.get('/validar-qr', async (req, res) => {
