@@ -150,7 +150,7 @@ app.get('/exportar-excel', async (req, res) => {
   }
 });
 
-// Endpoint para validar el QR
+// Endpoint para validar el QR ----------------------------------------------------------------------------------------------------
 app.get('/validar-qr', async (req, res) => {
   const { uniqueCode } = req.query;
 
@@ -158,12 +158,10 @@ app.get('/validar-qr', async (req, res) => {
     return res.status(400).json({ error: 'No se proporcionó el código QR' });
   }
 
-  console.log('Código recibido:', uniqueCode); // Depurar aquí
-
   try {
     // Buscar en la colección por uniqueCodePrincipal
     const snapshot = await db.collection('boletas2')
-      .where('uniqueCodePrincipal', '==', uniqueCode.trim()) // Asegúrate de eliminar espacios
+      .where('uniqueCodePrincipal', '==', uniqueCode.trim())
       .get();
 
     if (!snapshot.empty) {
@@ -179,7 +177,7 @@ app.get('/validar-qr', async (req, res) => {
 
     // Buscar por uniqueCodeAcompanante
     const snapshotAcompanante = await db.collection('boletas2')
-      .where('uniqueCodeAcompanante', '==', uniqueCode.trim()) // Asegúrate de eliminar espacios
+      .where('uniqueCodeAcompanante', '==', uniqueCode.trim())
       .get();
 
     if (!snapshotAcompanante.empty) {
@@ -200,9 +198,7 @@ app.get('/validar-qr', async (req, res) => {
   }
 });
 
-
-
-// Endpoint para cambiar el estado de uso
+// Endpoint para actualizar el estado del QR
 app.post('/actualizar-qr', async (req, res) => {
   const { id, type } = req.body;
 
@@ -222,7 +218,6 @@ app.post('/actualizar-qr', async (req, res) => {
     return res.status(500).json({ error: 'Error del servidor' });
   }
 });
-
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
