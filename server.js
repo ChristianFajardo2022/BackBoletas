@@ -40,6 +40,67 @@ app.use(cors({
 
 app.use(express.json());
 
+
+// Configuración de Multer para almacenamiento temporal
+const upload = multer({ dest: "uploads/" });
+
+// Especifica la ruta completa de ffmpeg y ffprobe
+ffmpeg.setFfmpegPath('C:/ffmpeg/bin/ffmpeg.exe');
+ffmpeg.setFfprobePath('C:/ffmpeg/bin/ffprobe.exe');
+
+// Ruta para combinar audios
+app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
+  // Verifica si los archivos están presentes
+  if (!req.files || req.files.length !== 2) {
+    return res.status(400).send("Se requieren exactamente dos archivos de audio.");
+  }
+
+  // Resuelve las rutas completas de los archivos recibidos
+  const [audio1, audio2] = req.files.map((file) => path.resolve(file.path));
+  const outputPath = path.resolve("uploads", combined-${Date.now()}.mp3);
+
+  try {
+    // Combina los audios usando la función de FFmpeg
+    await combineAudios(audio1, audio2, outputPath);
+
+    // Enviar el archivo combinado como respuesta
+    const readStream = fsStream.createReadStream(outputPath);
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Disposition", "attachment; filename=combined.mp3");
+    readStream.pipe(res);
+
+    // Eliminar archivos temporales después de enviar la respuesta
+    readStream.on('end', async () => {
+      try {
+        await fs.unlink(audio1); // Eliminar el primer archivo de audio
+        await fs.unlink(audio2); // Eliminar el segundo archivo de audio
+        await fs.unlink(outputPath); // Eliminar el archivo combinado
+      } catch (delError) {
+        console.error("Error eliminando archivos temporales:", delError);
+      }
+    });
+
+  } catch (error) {
+    console.error("Error combinando audios:", error);
+    res.status(500).send("Error combinando audios.");
+  }
+});
+
+// Función para combinar audios con FFmpeg
+async function combineAudios(audio1Path, audio2Path, outputPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(audio1Path)
+      .input(audio2Path)
+      .on("end", resolve)
+      .on("error", (err) => {
+        console.error("Error de FFmpeg:", err);
+        reject(err);
+      })
+      .mergeToFile(outputPath);
+  });
+}
+
 // Ruta para registrar datos en Firestore
 /* app.post('/registro', async (req, res) => {
   try {
