@@ -155,49 +155,45 @@ app.get('/exportar-excel', async (req, res) => {
 // Endpoint para validar el código QR
 app.get('/validar-qr', async (req, res) => {
   try {
-    const { qrContent } = req.query;
+    const { uniqueCode } = req.query;
 
-    if (!qrContent) {
-      return res.status(400).json({ message: 'El contenido del QR es obligatorio.' });
+    if (!uniqueCode) {
+      return res.status(400).json({ message: 'El código único es obligatorio.' });
     }
 
-    // Analizar el contenido del QR
-    const [type, id, correo] = qrContent.split('-');
+    // Buscar en Firestore
+    const snapshot = await db.collection('boletas2')
+      .where('uniqueCodePrincipal', '==', uniqueCode)
+      .get();
 
-    if (!type || !id || !correo) {
-      return res.status(400).json({ message: 'El contenido del QR no es válido.' });
-    }
+    if (snapshot.empty) {
+      // Si no es el código principal, buscar como acompañante
+      const acompSnapshot = await db.collection('boletas2')
+        .where('uniqueCodeAcompanante', '==', uniqueCode)
+        .get();
 
-    // Buscar el documento en Firestore
-    const docRef = db.collection('boletas2').doc(id);
-    const docSnapshot = await docRef.get();
-
-    if (!docSnapshot.exists) {
-      return res.status(404).json({ message: 'QR no encontrado.' });
-    }
-
-    const data = docSnapshot.data();
-
-    // Verificar el tipo de QR y su estado
-    if (type === 'QR') {
-      if (data.usadoPrincipal) {
-        return res.status(400).json({ message: 'QR principal ya usado.' });
+      if (acompSnapshot.empty) {
+        return res.status(404).json({ message: 'Código QR no encontrado.' });
       }
 
-      // Marcar el QR principal como usado
-      await docRef.update({ usadoPrincipal: true });
-      return res.status(200).json({ message: 'QR principal validado con éxito.' });
-    } else if (type === 'QR-AC') {
-      if (data.usadoAcompanante) {
+      // Validar QR acompañante
+      const acompDoc = acompSnapshot.docs[0];
+      if (acompDoc.data().usadoAcompanante) {
         return res.status(400).json({ message: 'QR acompañante ya usado.' });
       }
 
-      // Marcar el QR acompañante como usado
-      await docRef.update({ usadoAcompanante: true });
+      await acompDoc.ref.update({ usadoAcompanante: true });
       return res.status(200).json({ message: 'QR acompañante validado con éxito.' });
-    } else {
-      return res.status(400).json({ message: 'Tipo de QR no reconocido.' });
     }
+
+    // Validar QR principal
+    const doc = snapshot.docs[0];
+    if (doc.data().usadoPrincipal) {
+      return res.status(400).json({ message: 'QR principal ya usado.' });
+    }
+
+    await doc.ref.update({ usadoPrincipal: true });
+    return res.status(200).json({ message: 'QR principal validado con éxito.' });
   } catch (error) {
     console.error('Error al validar el QR:', error);
     return res.status(500).json({ message: 'Error interno del servidor.' });
