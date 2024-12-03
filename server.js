@@ -76,30 +76,42 @@ app.use(express.json());
  */
 // Endpoint para obtener una boleta específica
 app.get('/boletas/:id', async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params;  // Obtenemos el 'id' del parámetro de la URL
   try {
+    // Buscamos el documento en la colección 'boletas2' usando el ID
     const doc = await db.collection('boletas2').doc(id).get();
+
     if (!doc.exists) {
+      // Si el documento no existe, devolvemos un error 404
       return res.status(404).send({ error: 'Boleta no encontrada' });
     }
+
+    // Si el documento existe, devolvemos los datos
     res.status(200).send({ id: doc.id, ...doc.data() });
   } catch (error) {
+    // Si ocurre un error en el proceso, se captura y devuelve un error 500
     console.error('Error al obtener la boleta:', error);
     res.status(500).send({ error: 'Error al obtener la boleta' });
   }
 });
 
+
 // Endpoint para obtener todas las boletas
 app.get('/boletas', async (req, res) => {
   try {
+    // Obtenemos todos los documentos de la colección 'boletas2'
     const querySnapshot = await db.collection('boletas2').get();
+    
+    // Mapeamos los documentos a un formato que incluya el ID y los datos
     const boletas = querySnapshot.docs.map(doc => ({
-      id: doc.id, // Incluimos el ID del documento
-      ...doc.data(), // Incluimos todos los datos del documento
+      id: doc.id,  // Incluimos el ID del documento
+      ...doc.data(),  // Incluimos todos los datos del documento
     }));
 
+    // Respondemos con el arreglo de boletas
     res.status(200).send(boletas);
   } catch (error) {
+    // Si ocurre un error en el proceso, se captura y devuelve un error 500
     console.error('Error al obtener datos de Firestore:', error);
     res.status(500).send({ error: 'Error al obtener datos de Firestore' });
   }
