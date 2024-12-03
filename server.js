@@ -200,6 +200,8 @@ app.get('/validar-qr', async (req, res) => {
   }
 });
 
+
+
 // Endpoint para cambiar el estado de uso
 app.post('/actualizar-qr', async (req, res) => {
   const { id, type } = req.body;
