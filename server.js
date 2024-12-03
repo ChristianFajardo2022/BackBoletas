@@ -1,8 +1,8 @@
 require('dotenv').config(); // Cargar las variables de entorno
 const admin = require('firebase-admin');
 const express = require('express');
-/* const fs = require('fs');
- */const path = require('path');
+const fs = require('fs');
+const path = require('path');
 const cors = require('cors'); // Importar el middleware de CORS
 const QRCode = require('qrcode'); // Importar la librería para generar el código QR
 const XLSX = require('xlsx');
@@ -10,8 +10,8 @@ const XLSX = require('xlsx');
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
 const morgan = require("morgan");
-const fs = require("fs/promises"); // Módulo para trabajar con promesas en FS.
-const fsStream = require("fs"); // Para manejar la transmisión de archivos.
+/* const fs = require("fs/promises"); // Módulo para trabajar con promesas en FS.
+ */const fsStream = require("fs"); // Para manejar la transmisión de archivos.
 
 // Leer las credenciales desde el archivo especificado en el entorno
 const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
