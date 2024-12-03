@@ -41,7 +41,7 @@ app.use(cors({
 app.use(express.json());
 
 // Ruta para registrar datos en Firestore
-app.post('/registro', async (req, res) => {
+/* app.post('/registro', async (req, res) => {
   try {
     const { nombre, documentoTipo, documento, ciudad, celular, correo, edad } = req.body;
 
@@ -73,8 +73,8 @@ app.post('/registro', async (req, res) => {
     res.status(500).send({ error: 'Error al registrar en Firestore' });
   }
 });
-
-// Nuevo endpoint para obtener una boleta específica
+ */
+// Endpoint para obtener una boleta específica
 app.get('/boletas/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -89,14 +89,13 @@ app.get('/boletas/:id', async (req, res) => {
   }
 });
 
-
-// Nuevo endpoint para obtener datos desde Firestore
+// Endpoint para obtener todas las boletas
 app.get('/boletas', async (req, res) => {
   try {
     const querySnapshot = await db.collection('boletas2').get();
     const boletas = querySnapshot.docs.map(doc => ({
       id: doc.id, // Incluimos el ID del documento
-      ...doc.data() // Incluimos todos los datos del documento
+      ...doc.data(), // Incluimos todos los datos del documento
     }));
 
     res.status(200).send(boletas);
@@ -106,17 +105,16 @@ app.get('/boletas', async (req, res) => {
   }
 });
 
-
-// Nuevo endpoint para exportar los datos a un archivo Excel
+// Endpoint para exportar los datos a un archivo Excel
 app.get('/exportar-excel', async (req, res) => {
   try {
-    const querySnapshot = await db.collection('boletas').get();
+    const querySnapshot = await db.collection('boletas2').get();
     const boletas = querySnapshot.docs.map(doc => {
       const data = doc.data();
 
-      // Convertir el campo timestamp a un formato legible
-      if (data.timestamp) {
-        data.timestamp = data.timestamp.toDate().toISOString(); // Convierte a formato ISO
+      // Convertir el campo createdAt a un formato legible
+      if (data.createdAt) {
+        data.createdAt = data.createdAt.toDate().toISOString(); // Convierte a formato ISO
       }
 
       return {
@@ -158,18 +156,18 @@ app.get('/validar-qr', async (req, res) => {
     const { uniqueCode } = req.query;
 
     if (!uniqueCode) {
-      return res.status(400).json({ message: 'El código único es obligatorio.' });
+      return res.status(400).json({ message: 'El código QR es obligatorio.' });
     }
 
     // Buscar en Firestore
     const snapshot = await db.collection('boletas2')
-      .where('uniqueCodePrincipal', '==', uniqueCode)
+      .where('qrCodePrincipal', '==', uniqueCode)
       .get();
 
     if (snapshot.empty) {
       // Si no es el código principal, buscar como acompañante
       const acompSnapshot = await db.collection('boletas2')
-        .where('uniqueCodeAcompanante', '==', uniqueCode)
+        .where('qrCodeAcompanante', '==', uniqueCode)
         .get();
 
       if (acompSnapshot.empty) {
@@ -199,8 +197,6 @@ app.get('/validar-qr', async (req, res) => {
     return res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
-
-
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
