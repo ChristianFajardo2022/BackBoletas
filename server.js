@@ -151,54 +151,40 @@ app.get('/exportar-excel', async (req, res) => {
 });
 
 // Endpoint para validar el QR
+// Endpoint para validar el QR escaneado
 app.get('/validar-qr', async (req, res) => {
-  const { uniqueCode } = req.query;
-
-  if (!uniqueCode) {
-    return res.status(400).json({ error: 'No se proporcionó el código QR' });
-  }
-
-  console.log('Código recibido:', uniqueCode); // Depurar aquí
-
   try {
-    // Buscar en la colección por uniqueCodePrincipal
+    // Extraer el código único sin el prefijo "QR-"
+    const uniqueCode = req.query.uniqueCode.replace('QR-', '').trim();
+    console.log('Código recibido (sin prefijo):', uniqueCode);
+
+    // Buscar en Firestore el código sin el prefijo
     const snapshot = await db.collection('boletas2')
-      .where('uniqueCodePrincipal', '==', uniqueCode.trim()) // Asegúrate de eliminar espacios
+      .where('uniqueCodePrincipal', '==', uniqueCode)
       .get();
 
     if (!snapshot.empty) {
+      // Si se encuentra el código, devolver la información del documento
       const doc = snapshot.docs[0];
-      return res.json({ 
-        message: 'QR válido', 
-        type: 'principal', 
-        nombre: doc.data().nombre, 
+      console.log('Documento encontrado:', doc.data());
+      return res.json({
+        message: 'QR válido',
+        type: 'principal',
+        nombre: doc.data().nombre,
         id: doc.id,
-        usado: doc.data().usadoPrincipal 
+        usado: doc.data().usadoPrincipal,
       });
     }
 
-    // Buscar por uniqueCodeAcompanante
-    const snapshotAcompanante = await db.collection('boletas2')
-      .where('uniqueCodeAcompanante', '==', uniqueCode.trim()) // Asegúrate de eliminar espacios
-      .get();
-
-    if (!snapshotAcompanante.empty) {
-      const doc = snapshotAcompanante.docs[0];
-      return res.json({ 
-        message: 'QR válido', 
-        type: 'acompanante', 
-        nombre: doc.data().nombre, 
-        id: doc.id,
-        usado: doc.data().usadoAcompanante 
-      });
-    }
-
+    // Si no se encuentra, devolver un error
+    console.log('Código QR no encontrado en Firestore.');
     return res.status(404).json({ error: 'Código QR no encontrado' });
   } catch (error) {
-    console.error('Error validando el QR:', error);
-    return res.status(500).json({ error: 'Error del servidor' });
+    console.error('Error al procesar el QR:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
 
 // Endpoint para cambiar el estado de uso
 app.post('/actualizar-qr', async (req, res) => {
