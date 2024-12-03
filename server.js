@@ -153,38 +153,57 @@ app.get('/exportar-excel', async (req, res) => {
 });
 
 // Endpoint para validar el código QR
-app.post('/validar-qr', async (req, res) => {
+app.get('/validar-qr', async (req, res) => {
   try {
-    const { qrCode } = req.body;
+    const { qrContent } = req.query;
 
-    if (!qrCode) {
-      return res.status(400).send({ error: 'El código QR es obligatorio' });
+    if (!qrContent) {
+      return res.status(400).json({ message: 'El contenido del QR es obligatorio.' });
     }
 
-    // Buscar el documento que coincida con el QR proporcionado
-    const querySnapshot = await db.collection('boletas').where('qrCode', '==', qrCode).get();
+    // Analizar el contenido del QR
+    const [type, id, correo] = qrContent.split('-');
 
-    if (querySnapshot.empty) {
-      return res.status(404).send({ message: 'Código QR no encontrado' });
+    if (!type || !id || !correo) {
+      return res.status(400).json({ message: 'El contenido del QR no es válido.' });
     }
 
-    const doc = querySnapshot.docs[0]; // Suponemos que el código QR es único
-    const boleta = doc.data();
+    // Buscar el documento en Firestore
+    const docRef = db.collection('boletas2').doc(id);
+    const docSnapshot = await docRef.get();
 
-    // Verificar si el QR ya fue usado
-    if (boleta.usado) {
-      return res.status(400).send({ message: 'Este código ya fue usado' });
+    if (!docSnapshot.exists) {
+      return res.status(404).json({ message: 'QR no encontrado.' });
     }
 
-    // Actualizar el estado del QR a usado
-    await db.collection('boletas').doc(doc.id).update({ usado: true });
+    const data = docSnapshot.data();
 
-    res.status(200).send({ message: 'Código validado correctamente', data: boleta });
+    // Verificar el tipo de QR y su estado
+    if (type === 'QR') {
+      if (data.usadoPrincipal) {
+        return res.status(400).json({ message: 'QR principal ya usado.' });
+      }
+
+      // Marcar el QR principal como usado
+      await docRef.update({ usadoPrincipal: true });
+      return res.status(200).json({ message: 'QR principal validado con éxito.' });
+    } else if (type === 'QR-AC') {
+      if (data.usadoAcompanante) {
+        return res.status(400).json({ message: 'QR acompañante ya usado.' });
+      }
+
+      // Marcar el QR acompañante como usado
+      await docRef.update({ usadoAcompanante: true });
+      return res.status(200).json({ message: 'QR acompañante validado con éxito.' });
+    } else {
+      return res.status(400).json({ message: 'Tipo de QR no reconocido.' });
+    }
   } catch (error) {
-    console.error('Error al validar el código QR:', error);
-    res.status(500).send({ error: 'Error al validar el código QR' });
+    console.error('Error al validar el QR:', error);
+    return res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
+
 
 
 // Iniciar el servidor
