@@ -1,11 +1,12 @@
 require('dotenv').config(); // Cargar las variables de entorno
-const admin = require('firebase-admin');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors'); // Importar el middleware de CORS
 const QRCode = require('qrcode'); // Importar la librería para generar el código QR
 const XLSX = require('xlsx');
+const souvenirRoutes = require('./routes/souvenir');
+const db = require('./firebase/firebaseConfig');
 
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
@@ -13,26 +14,7 @@ const morgan = require("morgan");
 /* const fs = require("fs/promises"); // Módulo para trabajar con promesas en FS.
  */const fsStream = require("fs"); // Para manejar la transmisión de archivos.
 
-// Leer las credenciales desde el archivo especificado en el entorno
-const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH;
-if (!credentialsPath) {
-  throw new Error('FIREBASE_CREDENTIALS_PATH no está definido en .env');
-}
 
-// Asegúrate de que el archivo de credenciales existe
-if (!fs.existsSync(credentialsPath)) {
-  throw new Error(`El archivo de credenciales no se encontró en la ruta: ${credentialsPath}`);
-}
-
-// Inicializar Firebase
-const serviceAccount = require(path.resolve(credentialsPath));
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-});
-
-const db = admin.firestore();
 
 // Configuración del servidor Express
 const app = express();
@@ -49,6 +31,8 @@ app.use(express.json());
 
 
 const upload = multer({ dest: "uploads/" });
+
+app.use('/api', souvenirRoutes);
 
 // Ruta para combinar audios
 app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
@@ -358,3 +342,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
+module.exports = db
