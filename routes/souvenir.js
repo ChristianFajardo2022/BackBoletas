@@ -48,10 +48,6 @@ router.post("/souvenir-alcarrito", async (req, res) => {
     // Responder con los datos actualizados
     return res.status(200).json({
       message: "Documento actualizado exitosamente",
-      data: {
-        ...docData,
-        ...updateData, // Combinar datos antiguos y nuevos
-      },
     });
   } catch (error) {
     console.error("Error al actualizar el documento:", error);
