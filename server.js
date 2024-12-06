@@ -337,6 +337,53 @@ app.post('/actualizar-qr', async (req, res) => {
   }
 });
 
+router.get("/abuelito", async (req, res) => {
+  try {
+    const { tipoInteraccion } = req.query;
+
+    if (!tipoInteraccion) {
+      return res.status(400).json({ error: "Tipo de interacción requerido" });
+    }
+
+    const abuelitosRef = db.collection("abuelitos");
+    const snapshot = await abuelitosRef.get();
+
+    const abuelitos = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const opciones = Object.keys(data)
+        .filter((key) => key.startsWith("opcion"))
+        .map((key) => data[key]);
+
+      const opcionesFiltradas = opciones.filter(
+        (opcion) =>
+          opcion.interaccion === tipoInteraccion && opcion.estado === false
+      );
+
+      if (opcionesFiltradas.length > 0) {
+        abuelitos.push({
+          id: doc.id,
+          foto: data.foto,
+          nombre: doc.id,
+        });
+      }
+    });
+
+    if (abuelitos.length === 0) {
+      return res.status(404).json({ error: "No hay abuelitos disponibles" });
+    }
+
+    // Seleccionar un abuelito aleatorio
+    const abuelitoAleatorio =
+      abuelitos[Math.floor(Math.random() * abuelitos.length)];
+    res.json(abuelitoAleatorio);
+  } catch (error) {
+    console.error("Error al obtener abuelito:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
