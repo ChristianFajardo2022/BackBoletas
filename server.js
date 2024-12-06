@@ -122,7 +122,7 @@ async function combineAudios(audio1Path, audio2Path, outputPath) {
 });
  */
 // Endpoint para obtener una boleta específica
-app.get('/boletas/:id', async (req, res) => {
+/* app.get('/boletas/:id', async (req, res) => {
   const { id } = req.params;  // Obtenemos el 'id' del parámetro de la URL
   try {
     // Buscamos el documento en la colección 'boletas2' usando el ID
@@ -140,11 +140,11 @@ app.get('/boletas/:id', async (req, res) => {
     console.error('Error al obtener la boleta:', error);
     res.status(500).send({ error: 'Error al obtener la boleta' });
   }
-});
+}); */
 
 
 // Endpoint para obtener todas las boletas
-app.get('/boletas', async (req, res) => {
+/* app.get('/boletas', async (req, res) => {
   try {
     // Obtenemos todos los documentos de la colección 'boletas2'
     const querySnapshot = await db.collection('boletas2').get();
@@ -162,10 +162,10 @@ app.get('/boletas', async (req, res) => {
     console.error('Error al obtener datos de Firestore:', error);
     res.status(500).send({ error: 'Error al obtener datos de Firestore' });
   }
-});
+}); */
 
 // Endpoint para exportar los datos a un archivo Excel
-app.get('/exportar-excel', async (req, res) => {
+/* app.get('/exportar-excel', async (req, res) => {
   try {
     const querySnapshot = await db.collection('boletas2').get();
     const boletas = querySnapshot.docs.map(doc => {
@@ -207,10 +207,10 @@ app.get('/exportar-excel', async (req, res) => {
     console.error('Error al exportar a Excel:', error);
     res.status(500).send({ error: 'Error al exportar a Excel' });
   }
-});
+}); */
 
 // Endpoint para exportar los datos de Firestore a un archivo Excel
-app.get('/exportar-excel2', async (req, res) => {
+/* app.get('/exportar-excel2', async (req, res) => {
   try {
     // Obtener los documentos de la colección 'boletas2'
     const querySnapshot = await db.collection('boletas2').get();
@@ -253,13 +253,13 @@ app.get('/exportar-excel2', async (req, res) => {
     console.error('Error al exportar a Excel:', error);
     res.status(500).send({ error: 'Error al exportar a Excel' });
   }
-});
+}); */
 
 
 
 // Endpoint para validar el QR ----------------------------------------------------------------------------------------------------
 // Endpoint para validar el QR
-app.get('/validar-qr', async (req, res) => {
+/* app.get('/validar-qr', async (req, res) => {
   const { uniqueCode } = req.query;  // Obtenemos el código QR escaneado de los parámetros de la query
 
   if (!uniqueCode) {
@@ -314,10 +314,10 @@ app.get('/validar-qr', async (req, res) => {
     console.error('Error validando el QR:', error);
     return res.status(500).json({ error: 'Error del servidor' });
   }
-});
+}); */
 
 // Endpoint para actualizar el estado del QR
-app.post('/actualizar-qr', async (req, res) => {
+/* app.post('/actualizar-qr', async (req, res) => {
   const { id, type } = req.body;
 
   if (!id || !type) {
@@ -335,17 +335,17 @@ app.post('/actualizar-qr', async (req, res) => {
     console.error('Error actualizando el estado:', error);
     return res.status(500).json({ error: 'Error del servidor' });
   }
-});
+}); */
 
-router.get("/abuelito", async (req, res) => {
+app.get('/abuelito', async (req, res) => {
   try {
     const { tipoInteraccion } = req.query;
 
     if (!tipoInteraccion) {
-      return res.status(400).json({ error: "Tipo de interacción requerido" });
+      return res.status(400).json({ error: 'Tipo de interacción requerido' });
     }
 
-    const abuelitosRef = db.collection("abuelitos");
+    const abuelitosRef = db.collection('abuelitos');
     const snapshot = await abuelitosRef.get();
 
     const abuelitos = [];
@@ -353,7 +353,7 @@ router.get("/abuelito", async (req, res) => {
     snapshot.forEach((doc) => {
       const data = doc.data();
       const opciones = Object.keys(data)
-        .filter((key) => key.startsWith("opcion"))
+        .filter((key) => key.startsWith('opcion'))
         .map((key) => data[key]);
 
       const opcionesFiltradas = opciones.filter(
@@ -371,7 +371,7 @@ router.get("/abuelito", async (req, res) => {
     });
 
     if (abuelitos.length === 0) {
-      return res.status(404).json({ error: "No hay abuelitos disponibles" });
+      return res.status(404).json({ error: 'No hay abuelitos disponibles' });
     }
 
     // Seleccionar un abuelito aleatorio
@@ -379,8 +379,8 @@ router.get("/abuelito", async (req, res) => {
       abuelitos[Math.floor(Math.random() * abuelitos.length)];
     res.json(abuelitoAleatorio);
   } catch (error) {
-    console.error("Error al obtener abuelito:", error);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error('Error al obtener abuelito:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
