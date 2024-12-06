@@ -40,6 +40,7 @@ router.post("/souvenir-alcarrito", async (req, res) => {
       stock,
       orderDate,
       orderUpdate,
+      orderStatus
     };
 
     // Actualizar el documento
