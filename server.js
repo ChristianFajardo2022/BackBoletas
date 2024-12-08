@@ -384,6 +384,60 @@ app.get('/abuelito', async (req, res) => {
   }
 });
 
+app.post("/registrar-donacion", async (req, res) => {
+  try {
+    const { documentoId, tipoInteraccion, fecha, hora, donador } = req.body;
+
+    if (!documentoId || !fecha || !hora || !donador) {
+      return res.status(400).json({ error: "Datos incompletos" });
+    }
+
+    const abuelitoRef = db.collection("abuelitos").doc(documentoId);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    // Buscar la opción correspondiente en el documento del abuelito
+    const opciones = Object.keys(abuelitoSnap.data())
+      .filter((key) => key.startsWith("opcion"))
+      .find(
+        (key) =>
+          abuelitoSnap.data()[key].fecha === fecha &&
+          abuelitoSnap.data()[key].hora === hora &&
+          abuelitoSnap.data()[key].interaccion === tipoInteraccion
+      );
+
+    if (!opciones) {
+      return res.status(404).json({
+        error: "No se encontró una opción para la fecha, hora e interacción proporcionadas.",
+      });
+    }
+
+    // Actualizar el estado de la opción a true
+    await abuelitoRef.update({
+      [`${opciones}.estado`]: true,
+    });
+
+    // Guardar los datos en la colección "donador"
+    const donadorId = db.collection("donador").doc().id; // Generar un ID único
+    await db.collection("donador").doc(donadorId).set({
+      ...donador,
+      fecha,
+      hora,
+      tipoInteraccion,
+      abuelito: documentoId,
+    });
+
+    res.status(200).json({ message: "Registro exitoso" });
+  } catch (error) {
+    console.error("Error al registrar la donación:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
