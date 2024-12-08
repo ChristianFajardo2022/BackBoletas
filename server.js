@@ -437,6 +437,51 @@ app.post("/registrar-donacion", async (req, res) => {
   }
 });
 
+app.get("/obtener-abuelito/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const abuelitoRef = db.collection("abuelitos").doc(id);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    res.status(200).json(abuelitoSnap.data());
+  } catch (error) {
+    console.error("Error al obtener el abuelito:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+
+app.get("/obtener-opciones/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const abuelitoRef = db.collection("abuelitos").doc(id);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    const data = abuelitoSnap.data();
+    const opciones = Object.keys(data)
+      .filter((key) => key.startsWith("opcion"))
+      .map((key) => ({
+        id: key,
+        ...data[key],
+      }))
+      .filter((opcion) => opcion.estado === false);
+
+    res.status(200).json(opciones);
+  } catch (error) {
+    console.error("Error al obtener las opciones del abuelito:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
