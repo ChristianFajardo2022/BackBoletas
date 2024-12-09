@@ -5,7 +5,7 @@ const admin = require("firebase-admin"); // Necesario para usar Firestore Timest
 
 // Ruta para actualizar documentos en la colección "souvenir"
 router.post("/souvenir-alcarrito", async (req, res) => {
-  const { userId, numeroOrden, stock } = req.body;
+  const { userId, numeroOrden, stock, orderStatus } = req.body;
 
   if (!userId) {
     return res.status(400).json({ error: "El campo userId es obligatorio" });
@@ -45,6 +45,7 @@ router.post("/souvenir-alcarrito", async (req, res) => {
     // Actualizar el documento
     await docRef.update(updateData);
     console.log("El Stock es de " + stock);
+    console.log({Usuario: userId, updateData});
 
     // Responder con los datos actualizados
     return res.status(200).json({
