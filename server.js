@@ -22,7 +22,7 @@ const app = express();
 // Usar CORS para permitir solicitudes desde cualquier origen (para desarrollo)
 app.use(cors({
   origin: '*', // Aquí agregas la URL de tu frontend local
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', "DELETE", "PUT", "OPTIONS"],
   allowedHeaders: ['Content-Type'],
 }));
 
@@ -383,6 +383,171 @@ app.get('/abuelito', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+app.post("/registrar-donacion", async (req, res) => {
+  try {
+    const { documentoId, tipoInteraccion, fecha, hora, donador } = req.body;
+
+    if (!documentoId || !fecha || !hora || !donador) {
+      return res.status(400).json({ error: "Datos incompletos" });
+    }
+
+    const abuelitoRef = db.collection("abuelitos").doc(documentoId);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    // Buscar la opción correspondiente en el documento del abuelito
+    const opciones = Object.keys(abuelitoSnap.data())
+      .filter((key) => key.startsWith("opcion"))
+      .find(
+        (key) =>
+          abuelitoSnap.data()[key].fecha === fecha &&
+          abuelitoSnap.data()[key].hora === hora &&
+          abuelitoSnap.data()[key].interaccion === tipoInteraccion
+      );
+
+    if (!opciones) {
+      return res.status(404).json({
+        error: "No se encontró una opción para la fecha, hora e interacción proporcionadas.",
+      });
+    }
+
+    // Actualizar el estado de la opción a true
+    await abuelitoRef.update({
+      [`${opciones}.estado`]: true,
+    });
+
+    // Guardar los datos en la colección "donador"
+    const donadorId = db.collection("donador").doc().id; // Generar un ID único
+    await db.collection("donador").doc(donadorId).set({
+      ...donador,
+      fecha,
+      hora,
+      tipoInteraccion,
+      abuelito: documentoId,
+    });
+
+    res.status(200).json({ message: "Registro exitoso" });
+  } catch (error) {
+    console.error("Error al registrar la donación:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+app.get("/obtener-abuelito/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const abuelitoRef = db.collection("abuelitos").doc(id);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    res.status(200).json(abuelitoSnap.data());
+  } catch (error) {
+    console.error("Error al obtener el abuelito:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+
+app.get("/obtener-opciones/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const abuelitoRef = db.collection("abuelitos").doc(id);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    const data = abuelitoSnap.data();
+    const opciones = Object.keys(data)
+      .filter((key) => key.startsWith("opcion"))
+      .map((key) => ({
+        id: key,
+        ...data[key],
+      }))
+      .filter((opcion) => opcion.estado === false);
+
+    res.status(200).json(opciones);
+  } catch (error) {
+    console.error("Error al obtener las opciones del abuelito:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+app.get("/buscar-donador", async (req, res) => {
+  const { correo } = req.query;
+
+  try {
+    const snapshot = await db
+      .collection("donador")
+      .where("correo", "==", correo)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ error: "Donador no encontrado" });
+    }
+
+    const donador = snapshot.docs[0];
+    res.status(200).json({ id: donador.id, ...donador.data() });
+  } catch (error) {
+    console.error("Error al buscar donador:", error);
+    res.status(500).json({ error: "Error al buscar donador" });
+  }
+});
+app.delete("/eliminar-donador/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await db.collection("donador").doc(id).delete();
+    res.status(200).json({ message: "Donador eliminado con éxito" });
+  } catch (error) {
+    console.error("Error al eliminar donador:", error);
+    res.status(500).json({ error: "Error al eliminar donador" });
+  }
+});
+app.post("/actualizar-opcion-abuelito", async (req, res) => {
+  const { documentoId, fecha, hora } = req.body;
+
+  try {
+    const abuelitoRef = db.collection("abuelitos").doc(documentoId);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    const opciones = Object.keys(abuelitoSnap.data())
+      .filter((key) => key.startsWith("opcion"))
+      .find(
+        (key) =>
+          abuelitoSnap.data()[key].fecha === fecha &&
+          abuelitoSnap.data()[key].hora === hora
+      );
+
+    if (!opciones) {
+      return res
+        .status(404)
+        .json({ error: "No se encontró la opción para esa fecha y hora" });
+    }
+
+    await abuelitoRef.update({
+      [`${opciones}.estado`]: false,
+    });
+
+    res.status(200).json({ message: "Estado actualizado con éxito" });
+  } catch (error) {
+    console.error("Error al actualizar estado en abuelitos:", error);
+    res.status(500).json({ error: "Error al actualizar estado" });
+  }
+});
+
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
