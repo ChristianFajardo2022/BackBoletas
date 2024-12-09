@@ -481,6 +481,72 @@ app.get("/obtener-opciones/:id", async (req, res) => {
   }
 });
 
+app.get("/buscar-donador", async (req, res) => {
+  const { correo } = req.query;
+
+  try {
+    const snapshot = await db
+      .collection("donador")
+      .where("correo", "==", correo)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ error: "Donador no encontrado" });
+    }
+
+    const donador = snapshot.docs[0];
+    res.status(200).json({ id: donador.id, ...donador.data() });
+  } catch (error) {
+    console.error("Error al buscar donador:", error);
+    res.status(500).json({ error: "Error al buscar donador" });
+  }
+});
+app.delete("/eliminar-donador/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await db.collection("donador").doc(id).delete();
+    res.status(200).json({ message: "Donador eliminado con éxito" });
+  } catch (error) {
+    console.error("Error al eliminar donador:", error);
+    res.status(500).json({ error: "Error al eliminar donador" });
+  }
+});
+app.post("/actualizar-opcion-abuelito", async (req, res) => {
+  const { documentoId, fecha, hora } = req.body;
+
+  try {
+    const abuelitoRef = db.collection("abuelitos").doc(documentoId);
+    const abuelitoSnap = await abuelitoRef.get();
+
+    if (!abuelitoSnap.exists) {
+      return res.status(404).json({ error: "Abuelito no encontrado" });
+    }
+
+    const opciones = Object.keys(abuelitoSnap.data())
+      .filter((key) => key.startsWith("opcion"))
+      .find(
+        (key) =>
+          abuelitoSnap.data()[key].fecha === fecha &&
+          abuelitoSnap.data()[key].hora === hora
+      );
+
+    if (!opciones) {
+      return res
+        .status(404)
+        .json({ error: "No se encontró la opción para esa fecha y hora" });
+    }
+
+    await abuelitoRef.update({
+      [`${opciones}.estado`]: false,
+    });
+
+    res.status(200).json({ message: "Estado actualizado con éxito" });
+  } catch (error) {
+    console.error("Error al actualizar estado en abuelitos:", error);
+    res.status(500).json({ error: "Error al actualizar estado" });
+  }
+});
 
 
 // Iniciar el servidor
