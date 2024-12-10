@@ -551,6 +551,36 @@ app.post("/actualizar-opcion-abuelito", async (req, res) => {
   }
 });
 
+// Endpoint para descargar los datos de la colección "donador" en formato CSV
+app.get("/descargar-donadores", async (req, res) => {
+  try {
+    const snapshot = await db.collection("donador").get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ error: "No hay donadores registrados" });
+    }
+
+    const donadores = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    
+    // Dependiendo de tu entorno, podrías necesitar instalar la librería json2csv:
+    // npm install json2csv
+    const { Parser } = require("json2csv");
+    const fields = Object.keys(donadores[0]);
+    const opts = { fields };
+    const parser = new Parser(opts);
+    const csv = parser.parse(donadores);
+
+    // Configurar las cabeceras para forzar la descarga
+    res.setHeader("Content-Disposition", "attachment; filename=donadores.csv");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+
+    res.send(csv);
+  } catch (error) {
+    console.error("Error al descargar donadores en CSV:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
