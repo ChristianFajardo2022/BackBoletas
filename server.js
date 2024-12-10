@@ -1,44 +1,46 @@
-require('dotenv').config(); // Cargar las variables de entorno
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const cors = require('cors'); // Importar el middleware de CORS
-const QRCode = require('qrcode'); // Importar la librería para generar el código QR
-const XLSX = require('xlsx');
-const souvenirRoutes = require('./routes/souvenir');
-const db = require('./firebase/firebaseConfig');
+require("dotenv").config(); // Cargar las variables de entorno
+const express = require("express");
+const fs = require("fs"); // Para métodos de callback si los necesitas
+const fsp = require("fs/promises"); // Para métodos basados en promesas
+
+const path = require("path");
+const cors = require("cors"); // Importar el middleware de CORS
+const QRCode = require("qrcode"); // Importar la librería para generar el código QR
+const XLSX = require("xlsx");
+const souvenirRoutes = require("./routes/souvenir");
+const db = require("./firebase/firebaseConfig");
 
 const multer = require("multer");
 const ffmpeg = require("fluent-ffmpeg");
 const morgan = require("morgan");
 /* const fs = require("fs/promises"); // Módulo para trabajar con promesas en FS.
- */const fsStream = require("fs"); // Para manejar la transmisión de archivos.
-
-
+ */ const fsStream = require("fs"); // Para manejar la transmisión de archivos.
 
 // Configuración del servidor Express
 const app = express();
 
 // Usar CORS para permitir solicitudes desde cualquier origen (para desarrollo)
-app.use(cors({
-  origin: '*', // Aquí agregas la URL de tu frontend local
-  methods: ['GET', 'POST', "DELETE", "PUT", "OPTIONS"],
-  allowedHeaders: ['Content-Type'],
-}));
+app.use(
+  cors({
+    origin: "*", // Aquí agregas la URL de tu frontend local
+    methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
 app.use(express.json());
 
-
-
 const upload = multer({ dest: "uploads/" });
 
-app.use('/api', souvenirRoutes);
+app.use("/api", souvenirRoutes);
 
 // Ruta para combinar audios
 app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
   // Verifica si los archivos están presentes
   if (!req.files || req.files.length !== 2) {
-    return res.status(400).send("Se requieren exactamente dos archivos de audio.");
+    return res
+      .status(400)
+      .send("Se requieren exactamente dos archivos de audio.");
   }
 
   // Resuelve las rutas completas de los archivos recibidos
@@ -56,16 +58,15 @@ app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
     readStream.pipe(res);
 
     // Eliminar archivos temporales después de enviar la respuesta
-    readStream.on('end', async () => {
+    readStream.on("end", async () => {
       try {
-        await fs.unlink(audio1); // Eliminar el primer archivo de audio
-        await fs.unlink(audio2); // Eliminar el segundo archivo de audio
-        await fs.unlink(outputPath); // Eliminar el archivo combinado
+        await fsp.unlink(audio1); // Eliminar el primer archivo de audio
+        await fsp.unlink(audio2); // Eliminar el segundo archivo de audio
+        await fsp.unlink(outputPath); // Eliminar el archivo combinado
       } catch (delError) {
         console.error("Error eliminando archivos temporales:", delError);
       }
     });
-
   } catch (error) {
     console.error("Error combinando audios:", error);
     res.status(500).send("Error combinando audios.");
@@ -141,7 +142,6 @@ async function combineAudios(audio1Path, audio2Path, outputPath) {
     res.status(500).send({ error: 'Error al obtener la boleta' });
   }
 }); */
-
 
 // Endpoint para obtener todas las boletas
 /* app.get('/boletas', async (req, res) => {
@@ -255,8 +255,6 @@ async function combineAudios(audio1Path, audio2Path, outputPath) {
   }
 }); */
 
-
-
 // Endpoint para validar el QR ----------------------------------------------------------------------------------------------------
 // Endpoint para validar el QR
 /* app.get('/validar-qr', async (req, res) => {
@@ -337,15 +335,15 @@ async function combineAudios(audio1Path, audio2Path, outputPath) {
   }
 }); */
 
-app.get('/abuelito', async (req, res) => {
+app.get("/abuelito", async (req, res) => {
   try {
     const { tipoInteraccion } = req.query;
 
     if (!tipoInteraccion) {
-      return res.status(400).json({ error: 'Tipo de interacción requerido' });
+      return res.status(400).json({ error: "Tipo de interacción requerido" });
     }
 
-    const abuelitosRef = db.collection('abuelitos');
+    const abuelitosRef = db.collection("abuelitos");
     const snapshot = await abuelitosRef.get();
 
     const abuelitos = [];
@@ -353,7 +351,7 @@ app.get('/abuelito', async (req, res) => {
     snapshot.forEach((doc) => {
       const data = doc.data();
       const opciones = Object.keys(data)
-        .filter((key) => key.startsWith('opcion'))
+        .filter((key) => key.startsWith("opcion"))
         .map((key) => data[key]);
 
       const opcionesFiltradas = opciones.filter(
@@ -371,7 +369,7 @@ app.get('/abuelito', async (req, res) => {
     });
 
     if (abuelitos.length === 0) {
-      return res.status(404).json({ error: 'No hay abuelitos disponibles' });
+      return res.status(404).json({ error: "No hay abuelitos disponibles" });
     }
 
     // Seleccionar un abuelito aleatorio
@@ -379,8 +377,8 @@ app.get('/abuelito', async (req, res) => {
       abuelitos[Math.floor(Math.random() * abuelitos.length)];
     res.json(abuelitoAleatorio);
   } catch (error) {
-    console.error('Error al obtener abuelito:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error al obtener abuelito:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
@@ -411,7 +409,8 @@ app.post("/registrar-donacion", async (req, res) => {
 
     if (!opciones) {
       return res.status(404).json({
-        error: "No se encontró una opción para la fecha, hora e interacción proporcionadas.",
+        error:
+          "No se encontró una opción para la fecha, hora e interacción proporcionadas.",
       });
     }
 
@@ -422,13 +421,16 @@ app.post("/registrar-donacion", async (req, res) => {
 
     // Guardar los datos en la colección "donador"
     const donadorId = db.collection("donador").doc().id; // Generar un ID único
-    await db.collection("donador").doc(donadorId).set({
-      ...donador,
-      fecha,
-      hora,
-      tipoInteraccion,
-      abuelito: documentoId,
-    });
+    await db
+      .collection("donador")
+      .doc(donadorId)
+      .set({
+        ...donador,
+        fecha,
+        hora,
+        tipoInteraccion,
+        abuelito: documentoId,
+      });
 
     res.status(200).json({ message: "Registro exitoso" });
   } catch (error) {
@@ -453,7 +455,6 @@ app.get("/obtener-abuelito/:id", async (req, res) => {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-
 
 app.get("/obtener-opciones/:id", async (req, res) => {
   try {
@@ -548,10 +549,8 @@ app.post("/actualizar-opcion-abuelito", async (req, res) => {
   }
 });
 
-
 // Iniciar el servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
-
