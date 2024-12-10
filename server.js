@@ -8,6 +8,7 @@ const cors = require("cors"); // Importar el middleware de CORS
 const QRCode = require("qrcode"); // Importar la librería para generar el código QR
 const XLSX = require("xlsx");
 const souvenirRoutes = require("./routes/souvenir");
+const exportSouvenirRoutes = require("./routes/exportSouvenirData");
 const db = require("./firebase/firebaseConfig");
 
 const multer = require("multer");
@@ -33,6 +34,7 @@ app.use(express.json());
 const upload = multer({ dest: "uploads/" });
 
 app.use("/api", souvenirRoutes);
+app.use("/api", exportSouvenirRoutes);
 
 // Ruta para combinar audios
 app.post("/combine-audios", upload.array("audioFiles", 2), async (req, res) => {
