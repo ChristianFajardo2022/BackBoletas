@@ -31,26 +31,25 @@ router.post("/souvenir-alcarrito", async (req, res) => {
     const docData = userDoc.data(); // Datos actuales del documento
 
     // Generar fechas actuales en formato Firestore Timestamp
-    const orderDate = admin.firestore.Timestamp.now(); // Fecha de creación
+
     const orderUpdate = admin.firestore.Timestamp.now(); // Última actualización
 
     // Datos a actualizar
     const updateData = {
       numeroOrden,
-      orderDate,
-      orderUpdate,
-      orderStatus
+      updatedAt: orderUpdate,
+      orderStatus,
     };
 
     // Actualizar el documento
     await docRef.update(updateData);
     console.log("El Stock es de " + stock);
-    console.log({Usuario: userId, updateData});
+    console.log({ Usuario: userId, updateData });
 
     // Responder con los datos actualizados
     return res.status(200).json({
       message: "Documento actualizado exitosamente",
-      data: updateData
+      data: updateData,
     });
   } catch (error) {
     console.error("Error al actualizar el documento:", error);
